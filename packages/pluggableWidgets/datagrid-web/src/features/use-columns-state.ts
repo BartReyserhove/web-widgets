@@ -14,5 +14,10 @@ export function useColumnsState(columns: ColumnsType[], state: ColumnsState | un
         return [...accumulator, currIndex];
     }, []);
 
-    return { columns: filteredIndexes ? filteredIndexes.map((index): ColumnsType => columns[index]) : columns };
+    return {
+        columns:
+            filteredIndexes && filteredIndexes?.length > 0
+                ? filteredIndexes.map((index): ColumnsType => columns[index])
+                : columns
+    };
 }

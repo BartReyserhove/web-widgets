@@ -19,7 +19,6 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     const id = useRef(`DataGrid${generateUUID()}`);
 
     const [sortParameters, setSortParameters] = useState<SortProperty | undefined>(undefined);
-    const [columnsState, setColumnsState] = useState<ColumnsState | undefined>();
     const isInfiniteLoad = props.pagination === "virtualScrolling";
     const currentPage = isInfiniteLoad
         ? props.datasource.limit / props.pageSize
@@ -28,10 +27,21 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     const [filtered, setFiltered] = useState(false);
     const multipleFilteringState = useMultipleFiltering();
     const { FilterContext } = useFilterContext();
-    const { columns: filteredColumns } = useColumnsState(props.columns, columnsState);
+
+    const columns = useMemo(
+        () => props.columns.map((col, index) => new Column(col, index, id.current)),
+        [props.columns]
+    );
+
+    const [columnsState, { setHidden, setOrder }] = useColumnsState(() => {
+        return {
+            columnsHidden: columns.flatMap(column => (column.hidden ? [column.columnNumber] : [])),
+            columnsOrder: []
+        };
+    });
 
     const { items } = useDG2ExportApi({
-        columns: filteredColumns,
+        columns: props.columns,
         hasMoreItems: props.datasource.hasMoreItems || false,
         items: props.datasource.items,
         name: props.name,
@@ -138,6 +148,7 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
             className={props.class}
             columns={columns}
             CellComponent={Cell}
+            columnsState={columnsState}
             columnsDraggable={props.columnsDraggable}
             columnsFilterable={props.columnsFilterable}
             columnsHidable={props.columnsHidable}

@@ -2,7 +2,6 @@ import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef } fro
 import { EditableValue, ValueStatus } from "mendix";
 import { useEventCallback } from "@mendix/widget-plugin-hooks/useEventCallback";
 import { GridColumn } from "../typings/GridColumn";
-import { ColumnsState } from "./use-columns-state";
 
 declare type Option<T> = T | undefined;
 
@@ -58,8 +57,7 @@ export function useSettings(
     sortBy: SortingRule[],
     setSortBy: Dispatch<SetStateAction<SortingRule[]>>,
     widths: ColumnWidthConfig,
-    setWidths: Dispatch<SetStateAction<ColumnWidthConfig>>,
-    onColumnsChange?: (state: ColumnsState) => void
+    setWidths: Dispatch<SetStateAction<ColumnWidthConfig>>
 ): { updateSettings: () => void } {
     const previousLoadedSettings = useRef<string>();
     const shouldUpdate = useRef(true);
@@ -124,13 +122,6 @@ export function useSettings(
     ]);
 
     const updateSettings = useCallback(() => {
-        if (onColumnsChange) {
-            onColumnsChange({
-                columnsHidden: hiddenColumns,
-                columnsOrder: columnOrder
-            });
-        }
-
         if (settings && settings.status === ValueStatus.Available && shouldUpdate.current) {
             const newSettings = JSON.stringify(
                 createSettings(

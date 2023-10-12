@@ -50,6 +50,7 @@ export function SingleSelection({
                     <button
                         tabIndex={tabIndex}
                         className="widget-combobox-clear-button"
+                        aria-label="Clear selection"
                         onClick={e => {
                             e.stopPropagation();
                             inputRef.current?.focus();

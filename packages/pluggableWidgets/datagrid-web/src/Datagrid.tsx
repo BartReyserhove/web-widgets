@@ -4,9 +4,20 @@ import { useGridSelectionProps } from "@mendix/widget-plugin-grid/selection/useG
 import { generateUUID } from "@mendix/widget-plugin-platform/framework/generate-uuid";
 import { FilterCondition } from "mendix/filters";
 import { and } from "mendix/filters/builders";
-import { ReactElement, ReactNode, createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+    createElement,
+    Fragment,
+    ReactElement,
+    ReactNode,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState
+} from "react";
 import { DatagridContainerProps } from "../typings/DatagridProps";
 import { Cell } from "./components/Cell";
+import { ProgressModal } from "./components/ProgressModal";
 import { SortProperty, Widget } from "./components/Widget";
 import { WidgetHeaderContext } from "./components/WidgetHeaderContext";
 import { getColumnAssociationProps } from "./features/column";
@@ -27,8 +38,9 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     const [filtered, setFiltered] = useState(false);
     const multipleFilteringState = useMultipleFiltering();
     const { FilterContext } = useFilterContext();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { items } = useDG2ExportApi({
+    const { exporting, items } = useDG2ExportApi({
         columns: props.columns,
         hasMoreItems: props.datasource.hasMoreItems || false,
         items: props.datasource.items,
@@ -73,6 +85,12 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
             }, props.refreshInterval * 1000);
         }
     }, [props.datasource, props.refreshInterval]);
+
+    useEffect(() => {
+        if (exporting) {
+            setIsModalOpen(true);
+        }
+    }, [exporting]);
 
     const setPage = useCallback(
         (computePage: (prevPage: number) => number) => {
@@ -132,89 +150,92 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     });
 
     return (
-        <Widget
-            className={props.class}
-            columns={columns}
-            CellComponent={Cell}
-            columnsDraggable={props.columnsDraggable}
-            columnsFilterable={props.columnsFilterable}
-            columnsHidable={props.columnsHidable}
-            columnsResizable={props.columnsResizable}
-            columnsSortable={props.columnsSortable}
-            data={items}
-            emptyPlaceholderRenderer={useCallback(
-                (renderWrapper: (children: ReactNode) => ReactElement) =>
-                    props.showEmptyPlaceholder === "custom" ? renderWrapper(props.emptyPlaceholder) : <div />,
-                [props.emptyPlaceholder, props.showEmptyPlaceholder]
-            )}
-            filterRenderer={useCallback(
-                (renderWrapper, columnIndex) => {
-                    const column = props.columns[columnIndex];
-                    const { attribute, filter } = column;
-                    const associationProps = getColumnAssociationProps(column);
-                    const [, filterDispatcher] = customFiltersState[columnIndex];
-                    const initialFilters = extractFilters(attribute, viewStateFilters.current);
+        <Fragment>
+            <Widget
+                className={props.class}
+                columns={columns}
+                CellComponent={Cell}
+                columnsDraggable={props.columnsDraggable}
+                columnsFilterable={props.columnsFilterable}
+                columnsHidable={props.columnsHidable}
+                columnsResizable={props.columnsResizable}
+                columnsSortable={props.columnsSortable}
+                data={items}
+                emptyPlaceholderRenderer={useCallback(
+                    (renderWrapper: (children: ReactNode) => ReactElement) =>
+                        props.showEmptyPlaceholder === "custom" ? renderWrapper(props.emptyPlaceholder) : <div />,
+                    [props.emptyPlaceholder, props.showEmptyPlaceholder]
+                )}
+                filterRenderer={useCallback(
+                    (renderWrapper, columnIndex) => {
+                        const column = props.columns[columnIndex];
+                        const { attribute, filter } = column;
+                        const associationProps = getColumnAssociationProps(column);
+                        const [, filterDispatcher] = customFiltersState[columnIndex];
+                        const initialFilters = extractFilters(attribute, viewStateFilters.current);
 
-                    if (!attribute && !associationProps) {
-                        return renderWrapper(filter);
-                    }
+                        if (!attribute && !associationProps) {
+                            return renderWrapper(filter);
+                        }
 
-                    return renderWrapper(
-                        <FilterContext.Provider
-                            value={{
-                                filterDispatcher: prev => {
-                                    setFiltered(true);
-                                    filterDispatcher(prev);
-                                    return prev;
-                                },
-                                singleAttribute: attribute,
-                                singleInitialFilter: initialFilters,
-                                associationProperties: associationProps
-                            }}
+                        return renderWrapper(
+                            <FilterContext.Provider
+                                value={{
+                                    filterDispatcher: prev => {
+                                        setFiltered(true);
+                                        filterDispatcher(prev);
+                                        return prev;
+                                    },
+                                    singleAttribute: attribute,
+                                    singleInitialFilter: initialFilters,
+                                    associationProperties: associationProps
+                                }}
+                            >
+                                {filter}
+                            </FilterContext.Provider>
+                        );
+                    },
+                    [FilterContext, customFiltersState, props.columns]
+                )}
+                headerTitle={props.filterSectionTitle?.value}
+                headerContent={
+                    props.filtersPlaceholder && (
+                        <WidgetHeaderContext
+                            filterList={props.filterList}
+                            setFiltered={setFiltered}
+                            viewStateFilters={viewStateFilters.current}
+                            selectionContextValue={selectionContextValue}
+                            state={multipleFilteringState}
                         >
-                            {filter}
-                        </FilterContext.Provider>
-                    );
-                },
-                [FilterContext, customFiltersState, props.columns]
-            )}
-            headerTitle={props.filterSectionTitle?.value}
-            headerContent={
-                props.filtersPlaceholder && (
-                    <WidgetHeaderContext
-                        filterList={props.filterList}
-                        setFiltered={setFiltered}
-                        viewStateFilters={viewStateFilters.current}
-                        selectionContextValue={selectionContextValue}
-                        state={multipleFilteringState}
-                    >
-                        {props.filtersPlaceholder}
-                    </WidgetHeaderContext>
-                )
-            }
-            hasMoreItems={props.datasource.hasMoreItems ?? false}
-            headerWrapperRenderer={useCallback((_columnIndex: number, header: ReactElement) => header, [])}
-            id={id.current}
-            numberOfItems={props.datasource.totalCount}
-            page={currentPage}
-            pageSize={props.pageSize}
-            paging={props.pagination === "buttons"}
-            pagingPosition={props.pagingPosition}
-            rowClass={useCallback((value: any) => props.rowClass?.get(value)?.value ?? "", [props.rowClass])}
-            setPage={setPage}
-            setSortParameters={setSortParameters}
-            settings={props.configurationAttribute}
-            styles={props.style}
-            valueForSort={useCallback(
-                (value, columnIndex) => {
-                    const column = props.columns[columnIndex];
-                    return column.attribute ? column.attribute.get(value).value : "";
-                },
-                [props.columns]
-            )}
-            rowAction={props.onClick}
-            selectionProps={selectionProps}
-            selectionStatus={selectionHelper?.type === "Multi" ? selectionHelper.selectionStatus : "unknown"}
-        />
+                            {props.filtersPlaceholder}
+                        </WidgetHeaderContext>
+                    )
+                }
+                hasMoreItems={props.datasource.hasMoreItems ?? false}
+                headerWrapperRenderer={useCallback((_columnIndex: number, header: ReactElement) => header, [])}
+                id={id.current}
+                numberOfItems={props.datasource.totalCount}
+                page={currentPage}
+                pageSize={props.pageSize}
+                paging={props.pagination === "buttons"}
+                pagingPosition={props.pagingPosition}
+                rowClass={useCallback((value: any) => props.rowClass?.get(value)?.value ?? "", [props.rowClass])}
+                setPage={setPage}
+                setSortParameters={setSortParameters}
+                settings={props.configurationAttribute}
+                styles={props.style}
+                valueForSort={useCallback(
+                    (value, columnIndex) => {
+                        const column = props.columns[columnIndex];
+                        return column.attribute ? column.attribute.get(value).value : "";
+                    },
+                    [props.columns]
+                )}
+                rowAction={props.onClick}
+                selectionProps={selectionProps}
+                selectionStatus={selectionHelper?.type === "Multi" ? selectionHelper.selectionStatus : "unknown"}
+            />
+            <ProgressModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+        </Fragment>
     );
 }

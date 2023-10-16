@@ -40,7 +40,7 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     const { FilterContext } = useFilterContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { exporting, items } = useDG2ExportApi({
+    const { exporting, items, processedRows } = useDG2ExportApi({
         columns: props.columns,
         hasMoreItems: props.datasource.hasMoreItems || false,
         items: props.datasource.items,
@@ -235,7 +235,13 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
                 selectionProps={selectionProps}
                 selectionStatus={selectionHelper?.type === "Multi" ? selectionHelper.selectionStatus : "unknown"}
             />
-            <ProgressModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+            <ProgressModal
+                onCancel={() => {}}
+                onOpenChange={setIsModalOpen}
+                open={isModalOpen}
+                progress={processedRows}
+                total={props.datasource.totalCount}
+            />
         </Fragment>
     );
 }

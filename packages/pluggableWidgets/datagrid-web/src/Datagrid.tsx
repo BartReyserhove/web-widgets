@@ -149,6 +149,8 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
         showSelectAllToggle: props.showSelectAllToggle
     });
 
+    console.info(isModalOpen);
+
     return (
         <Fragment>
             <Widget
@@ -238,7 +240,7 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
             <ProgressModal
                 onCancel={() => {}}
                 onOpenChange={setIsModalOpen}
-                open={isModalOpen}
+                open={true}
                 progress={processedRows}
                 total={props.datasource.totalCount}
             />

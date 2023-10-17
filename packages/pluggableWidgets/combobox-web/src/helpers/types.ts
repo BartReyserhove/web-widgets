@@ -62,5 +62,8 @@ export interface SelectionBaseProps<Selector> {
     inputId: string;
     labelId?: string;
     noOptionsText?: string;
-    clearButtonAriaLabel?: string;
+    clearButtonAriaLabels?: {
+        clearSelection: string;
+        removeSelection: string;
+    };
 }

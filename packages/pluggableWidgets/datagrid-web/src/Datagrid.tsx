@@ -38,7 +38,7 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
     const [filtered, setFiltered] = useState(false);
     const multipleFilteringState = useMultipleFiltering();
     const { FilterContext } = useFilterContext();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(true);
 
     const { exporting, items, processedRows } = useDG2ExportApi({
         columns: props.columns,
@@ -104,6 +104,10 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
         [props.datasource, props.pageSize, isInfiniteLoad, currentPage]
     );
 
+    const onDialogClose = useCallback(() => {
+        setIsModalOpen(false);
+    }, [setIsModalOpen]);
+
     // TODO: Rewrite this logic with single useReducer (or write
     // custom hook that will use useReducer)
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -149,10 +153,8 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
         showSelectAllToggle: props.showSelectAllToggle
     });
 
-    console.info(isModalOpen);
-
     return (
-        <Fragment>
+        <div style={{ position: "relative" }}>
             <Widget
                 className={props.class}
                 columns={columns}
@@ -237,13 +239,13 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
                 selectionProps={selectionProps}
                 selectionStatus={selectionHelper?.type === "Multi" ? selectionHelper.selectionStatus : "unknown"}
             />
+
             <ProgressModal
-                onCancel={() => {}}
-                onOpenChange={setIsModalOpen}
-                open={true}
+                onCancel={onDialogClose}
+                open={isModalOpen}
                 progress={processedRows}
                 total={props.datasource.totalCount}
             />
-        </Fragment>
+        </div>
     );
 }

@@ -92,6 +92,19 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
         }
     }, [exporting]);
 
+    useEffect(() => {
+        if (isModalOpen) {
+            // Pushing the change to the end of the call stack
+            const timer = setTimeout(() => {
+                document.body.style.pointerEvents = "";
+            }, 0);
+
+            return () => clearTimeout(timer);
+        } else {
+            document.body.style.pointerEvents = "auto";
+        }
+    }, [isModalOpen]);
+
     const setPage = useCallback(
         (computePage: (prevPage: number) => number) => {
             const newPage = computePage(currentPage);
@@ -106,6 +119,7 @@ export default function Datagrid(props: DatagridContainerProps): ReactElement {
 
     const onDialogClose = useCallback(() => {
         setIsModalOpen(false);
+        window.__abort();
     }, [setIsModalOpen]);
 
     // TODO: Rewrite this logic with single useReducer (or write

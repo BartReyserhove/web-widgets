@@ -14,7 +14,7 @@ import { ComboboxContainerProps } from "../../typings/ComboboxProps";
 import Combobox from "../Combobox";
 
 // function helper to ease DOM changes in development
-async function getToggleButton(component: RenderResult) {
+async function getToggleButton(component: RenderResult): Promise<Element> {
     return component.container.querySelector(".widget-combobox-down-arrow")!;
 }
 async function getInput(component: RenderResult): Promise<HTMLInputElement> {
